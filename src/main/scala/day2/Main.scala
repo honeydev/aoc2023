@@ -35,8 +35,9 @@ def calc(rows: Iterator[String]) =
     case Left(err)    => println(err)
     case Right(games) =>
       games.foldMap {
+        // Use cats semigroup implementation for Tuple2[Int, Int]
         case (Some(gId), cp) => (gId, cp)
-        case (None, cp) => (0, cp)
+        case (None, cp)      => (0, cp)
       }
 
 def parseRow(row: String): Either[String, (Option[Int], Int)] =
