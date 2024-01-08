@@ -28,24 +28,22 @@ Game 5: 6 red, 1 blue, 3 green; 2 blue, 1 red, 2 green
   }
   println(s"Full result: $result")
 
-
 def calc(rows: Iterator[String]) =
   rows.map(parseRow)
     .toList
     .traverse(identity) match
-    case Left(err)      => println(err)
-    case Right(v)       => v.foldMap {
-      case Some(gameId) => gameId
-      case None => 0
-    }
+    case Left(err)    => println(err)
+    case Right(games) =>
+      games.foldMap {
+        case (Some(gId), cp) => (gId, cp)
+        case (None, cp) => (0, cp)
+      }
 
-
-
-def parseRow(row: String): Either[String, Option[Int]] =
+def parseRow(row: String): Either[String, (Option[Int], Int)] =
   val gameLastIndex = row.indexOf(":")
   val firstSpaceIndex = row.indexOf(" ") + 1
 
-  val rows = for {
+  for {
     id <- {
       val intString = row.slice(firstSpaceIndex, gameLastIndex)
       intString.toIntOption.toRight(s"Invalid int value ${intString}")
@@ -70,5 +68,12 @@ def parseRow(row: String): Either[String, Option[Int]] =
         .toList
         .traverse(identity)
     }
-  } yield if (cubeRows.forall({ v => v.count <= v.color.maxValue })) Some(id) else None
-  rows
+    cubesPower = {
+      cubeRows
+        .groupBy(_.color)
+        .map { case (k, v) =>
+          v.max(Ordering.by[Cube, Int](_.count)).count
+        }.product
+    }
+    gameId = if (cubeRows.forall({ v => v.count <= v.color.maxValue })) Some(id) else None
+  } yield (gameId, cubesPower)
